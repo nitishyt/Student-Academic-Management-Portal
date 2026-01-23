@@ -65,34 +65,11 @@ const AdminDashboard = () => {
     }
   };
 
-  // Load attendance for selected student
-  const loadAttendance = () => {
-    if (!selectedStudent) return;
-    
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    
-    const attendance = studentData.getAttendance(selectedStudent);
-    const calendar = [];
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateKey = `${currentYear}-${currentMonth + 1}-${day}`;
-      calendar.push({
-        day,
-        dateKey,
-        status: attendance[dateKey] || ''
-      });
-    }
-    
-    setAttendanceCalendar(calendar);
-  };
-
   // Toggle attendance
   const toggleAttendance = (dateKey, currentStatus) => {
     const newStatus = currentStatus === 'present' ? 'absent' : 'present';
     studentData.setAttendance(selectedStudent, dateKey, newStatus);
-    loadAttendance();
+    loadAttendanceForStudent(selectedStudent);
   };
 
   // Add result
@@ -105,13 +82,7 @@ const AdminDashboard = () => {
 
     studentData.addResult(selectedStudent, resultForm.subject, resultForm.marks);
     setResultForm({ subject: '', marks: '' });
-    loadResults();
-  };
-
-  // Load results for selected student
-  const loadResults = () => {
-    if (!selectedStudent) return;
-    setResults(studentData.getResults(selectedStudent));
+    loadResultsForStudent(selectedStudent);
   };
 
   // Handle section change
@@ -128,10 +99,39 @@ const AdminDashboard = () => {
   const handleStudentSelect = (studentId, section) => {
     setSelectedStudent(studentId);
     if (section === 'attendance') {
-      setTimeout(loadAttendance, 0);
+      loadAttendanceForStudent(studentId);
     } else if (section === 'results') {
-      setTimeout(loadResults, 0);
+      loadResultsForStudent(studentId);
     }
+  };
+
+  // Load attendance for specific student
+  const loadAttendanceForStudent = (studentId) => {
+    if (!studentId) return;
+    
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    const attendance = studentData.getAttendance(studentId);
+    const calendar = [];
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = `${currentYear}-${currentMonth + 1}-${day}`;
+      calendar.push({
+        day,
+        dateKey,
+        status: attendance[dateKey] || ''
+      });
+    }
+    
+    setAttendanceCalendar(calendar);
+  };
+
+  // Load results for specific student
+  const loadResultsForStudent = (studentId) => {
+    if (!studentId) return;
+    setResults(studentData.getResults(studentId));
   };
 
   return (
