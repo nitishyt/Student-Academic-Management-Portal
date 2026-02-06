@@ -47,7 +47,7 @@ const Login = () => {
   return (
     <div className="login-container">
       <form className="login-form" onSubmit={handleLogin}>
-        <h2>Student Portal Login</h2>
+        <h2>Welcome to Student Portal Login</h2>
         
         <select value={userType} onChange={handleUserTypeChange}>
           <option value="student">Student</option>
