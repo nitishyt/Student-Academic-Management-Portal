@@ -33,7 +33,20 @@ app.get('/api/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
+  const os = require('os');
+  const networkInterfaces = os.networkInterfaces();
+  let localIP = 'localhost';
+
+  Object.keys(networkInterfaces).forEach((iface) => {
+    networkInterfaces[iface].forEach((details) => {
+      if (details.family === 'IPv4' && !details.internal) {
+        localIP = details.address;
+      }
+    });
+  });
+
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌐 Local Network: http://${localIP}:${PORT}/api`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
 });
