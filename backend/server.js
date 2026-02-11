@@ -20,7 +20,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:5174',
-    'https://student-academic-management-portal-1.onrender.com'
+    'https://student-academic-management-portal-1.onrender.com',
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

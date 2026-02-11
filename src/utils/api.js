@@ -1,10 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL:
-    window.location.hostname === 'localhost'
-      ? 'http://localhost:5000/api'
-      : 'https://student-academic-management-portal-ksgd.onrender.com/api',
+  baseURL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:10000/api'
+    : 'https://student-academic-management-portal-ksqd.onrender.com/api',
   headers: {
     'Content-Type': 'application/json'
   },
