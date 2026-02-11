@@ -5,6 +5,9 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Student = require('../models/Student');
 
+// Fallback secret for development if environment variable is missing
+const JWT_SECRET = process.env.JWT_SECRET || 'student_portal_secret_key_2025_fallback';
+
 router.post('/login', async (req, res) => {
   try {
     const { username, password, role } = req.body;
@@ -33,7 +36,7 @@ router.post('/login', async (req, res) => {
       }
     }
 
-    const token = jwt.sign(userData, process.env.JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign(userData, JWT_SECRET, { expiresIn: '24h' });
 
     res.json({ token, user: userData });
   } catch (error) {

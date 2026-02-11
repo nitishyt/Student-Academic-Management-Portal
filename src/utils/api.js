@@ -4,7 +4,7 @@ const API_BASE =
   window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000'
-    : 'https://student-academic-management-portal-ksqd.onrender.com';
+    : (import.meta.env.VITE_API_BASE_URL || 'https://student-academic-management-portal-ksgd.onrender.com');
 
 const api = axios.create({
   baseURL: `${API_BASE}/api`,
