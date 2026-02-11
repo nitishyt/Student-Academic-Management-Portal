@@ -1,15 +1,13 @@
 import axios from 'axios';
 
-const API_BASE =
-  window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5000'
-    : (import.meta.env.VITE_API_BASE_URL || 'https://student-academic-management-portal-ksgd.onrender.com');
-
 const api = axios.create({
-  baseURL: `${API_BASE}/api`,
-  headers: { 'Content-Type': 'application/json' },
-  withCredentials: false
+  baseURL:
+    window.location.hostname === 'localhost'
+      ? 'http://localhost:5000/api'
+      : 'https://student-academic-management-portal-ksqd.onrender.com/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 api.interceptors.request.use((config) => {
@@ -39,19 +37,15 @@ export const facultyAPI = {
 };
 
 export const attendanceAPI = {
-  getByStudent: (studentId) => api.get(`/attendance/student/${studentId}`),
+  getByStudent: (studentId) =>
+    api.get(`/attendance/student/${studentId}`),
   mark: (data) =>
-    api.post('/attendance', {
-      studentId: data.studentId,
-      date: data.date,
-      time: data.time,
-      subject: data.subject,
-      status: data.status
-    })
+    api.post('/attendance', data)
 };
 
 export const resultAPI = {
-  getByStudent: (studentId) => api.get(`/results/student/${studentId}`),
+  getByStudent: (studentId) =>
+    api.get(`/results/student/${studentId}`),
   create: (data) => api.post('/results', data)
 };
 
