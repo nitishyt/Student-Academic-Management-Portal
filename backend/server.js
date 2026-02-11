@@ -17,13 +17,18 @@ connectDB();
 
 // Middleware
 // Middleware
-app.use(cors({
-  origin: true,
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-app.options('(.*)', cors()); // Enable pre-flight for all routes
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://student-academic-management-portal-1.onrender.com"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  })
+);
+
 
 
 app.use(bodyParser.json({ limit: '10mb' }));
