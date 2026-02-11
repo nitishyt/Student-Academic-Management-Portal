@@ -1,76 +1,82 @@
-// Student data management functions
+import { studentAPI, attendanceAPI, resultAPI, facultyAPI } from './api';
+
 export const studentData = {
-  // Get all students
-  getStudents: () => {
-    return JSON.parse(localStorage.getItem('students') || '[]');
+  getStudents: async () => {
+    const { data } = await studentAPI.getAll();
+    return data;
   },
 
-  // Add new student
-  addStudent: (studentInfo) => {
-    const students = studentData.getStudents();
-    const username = studentInfo.rollNo.toLowerCase();
-    const password = studentInfo.name.toLowerCase().replace(' ', '') + '123';
-    
-    const newStudent = {
-      ...studentInfo,
-      username,
-      password,
-      id: Date.now()
-    };
-    
-    students.push(newStudent);
-    localStorage.setItem('students', JSON.stringify(students));
-    return newStudent;
+  addStudent: async (studentInfo) => {
+    const { data } = await studentAPI.create(studentInfo);
+    return data;
   },
 
-  // Delete student
-  deleteStudent: (studentId) => {
-    const students = studentData.getStudents().filter(s => s.id !== studentId);
-    localStorage.setItem('students', JSON.stringify(students));
-    
-    // Remove student's attendance and results
-    const attendance = JSON.parse(localStorage.getItem('attendance') || '{}');
-    delete attendance[studentId];
-    localStorage.setItem('attendance', JSON.stringify(attendance));
-    
-    const results = JSON.parse(localStorage.getItem('results') || '{}');
-    delete results[studentId];
-    localStorage.setItem('results', JSON.stringify(results));
+  deleteStudent: async (studentId) => {
+    await studentAPI.delete(studentId);
   },
 
-  // Get student by ID
-  getStudentById: (id) => {
-    const students = studentData.getStudents();
-    return students.find(s => s.id == id);
+  getStudentById: async (id) => {
+    const { data } = await studentAPI.getById(id);
+    return data;
   },
 
-  // Attendance functions
-  getAttendance: (studentId) => {
-    const attendance = JSON.parse(localStorage.getItem('attendance') || '{}');
-    return attendance[studentId] || {};
+  getAttendance: async (studentId) => {
+    try {
+      if (!studentId) return [];
+      const { data } = await attendanceAPI.getByStudent(studentId);
+      const flatAttendance = [];
+      data.forEach(record => {
+        record.lectures?.forEach(lecture => {
+          flatAttendance.push({
+            date: record.date,
+            time: lecture.time,
+            subject: lecture.subject,
+            status: lecture.status
+          });
+        });
+      });
+      return flatAttendance;
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+      return [];
+    }
   },
 
-  setAttendance: (studentId, date, status) => {
-    const attendance = JSON.parse(localStorage.getItem('attendance') || '{}');
-    if (!attendance[studentId]) attendance[studentId] = {};
-    attendance[studentId][date] = status;
-    localStorage.setItem('attendance', JSON.stringify(attendance));
+  setAttendance: async (studentId, date, status, time, subject) => {
+    await attendanceAPI.mark({ studentId, date, status, time, subject });
   },
 
-  // Results functions
-  getResults: (studentId) => {
-    const results = JSON.parse(localStorage.getItem('results') || '{}');
-    return results[studentId] || [];
+  getResults: async (studentId) => {
+    try {
+      if (!studentId) return [];
+      const { data } = await resultAPI.getByStudent(studentId);
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching results:', error);
+      return [];
+    }
   },
 
-  addResult: (studentId, subject, marks) => {
-    const results = JSON.parse(localStorage.getItem('results') || '{}');
-    if (!results[studentId]) results[studentId] = [];
-    results[studentId].push({
-      subject,
-      marks: parseInt(marks),
-      date: new Date().toLocaleDateString()
-    });
-    localStorage.setItem('results', JSON.stringify(results));
+  addResult: async (studentId, resultData) => {
+    await resultAPI.create({ studentId, ...resultData });
+  },
+
+  getFaculties: async () => {
+    try {
+      const { data } = await facultyAPI.getAll();
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching faculties:', error);
+      return [];
+    }
+  },
+
+  addFaculty: async (facultyInfo) => {
+    const { data } = await facultyAPI.create(facultyInfo);
+    return data;
+  },
+
+  deleteFaculty: async (facultyId) => {
+    await facultyAPI.delete(facultyId);
   }
 };

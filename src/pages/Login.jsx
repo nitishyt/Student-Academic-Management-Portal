@@ -13,7 +13,13 @@ const Login = () => {
   useEffect(() => {
     if (auth.isAuthenticated()) {
       const currentUserType = auth.getUserType();
-      navigate(currentUserType === 'admin' ? '/admin' : '/student');
+      const routes = {
+        admin: '/admin',
+        student: '/student',
+        faculty: '/faculty',
+        parent: '/parent'
+      };
+      navigate(routes[currentUserType] || '/login');
     }
   }, [navigate]);
 
@@ -26,7 +32,7 @@ const Login = () => {
   };
 
   // Handle login form submission
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -35,10 +41,16 @@ const Login = () => {
       return;
     }
 
-    const result = auth.login(userType, username, password);
+    const result = await auth.login(userType, username, password);
     
     if (result.success) {
-      navigate(userType === 'admin' ? '/admin' : '/student');
+      const routes = {
+        admin: '/admin',
+        student: '/student',
+        faculty: '/faculty',
+        parent: '/parent'
+      };
+      navigate(routes[userType] || '/login');
     } else {
       setError(result.error);
     }
@@ -51,6 +63,8 @@ const Login = () => {
         
         <select value={userType} onChange={handleUserTypeChange}>
           <option value="student">Student</option>
+          <option value="faculty">Faculty</option>
+          <option value="parent">Parent</option>
           <option value="admin">Admin</option>
         </select>
 
@@ -58,14 +72,24 @@ const Login = () => {
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder={userType === 'admin' ? 'Admin user ' : 'Student Username'}
+          placeholder={
+            userType === 'admin' ? 'Admin Username' :
+            userType === 'faculty' ? 'Faculty Username' :
+            userType === 'parent' ? 'Parent Username' :
+            'Student Username'
+          }
         />
 
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder={userType === 'admin' ? 'Admin password ' : 'Student Password'}
+          placeholder={
+            userType === 'admin' ? 'Admin Password' :
+            userType === 'faculty' ? 'Faculty Password' :
+            userType === 'parent' ? 'Parent Password' :
+            'Student Password'
+          }
         />
 
         <button type="submit">Login</button>

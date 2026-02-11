@@ -1,43 +1,40 @@
-// Authentication utility functions
+import { authAPI } from './api';
+
 export const auth = {
-  // Check if user is logged in
   isAuthenticated: () => {
-    return localStorage.getItem('userType') !== null;
+    return localStorage.getItem('token') !== null;
   },
 
-  // Get current user type (admin or student)
   getUserType: () => {
-    return localStorage.getItem('userType');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.role;
   },
 
-  // Get current student ID
+  getCurrentUserId: () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.studentId || user.id;
+  },
+
   getCurrentStudentId: () => {
-    return localStorage.getItem('currentStudentId');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.studentId;
   },
 
-  // Login function
-  login: (userType, username, password) => {
-    if (userType === 'admin') {
-      if (username === 'admin' && password === 'admin123') {
-        localStorage.setItem('userType', 'admin');
-        return { success: true };
-      }
-    } else {
-      const students = JSON.parse(localStorage.getItem('students') || '[]');
-      const student = students.find(s => s.username === username && s.password === password);
-      
-      if (student) {
-        localStorage.setItem('userType', 'student');
-        localStorage.setItem('currentStudentId', student.id);
-        return { success: true };
-      }
+  login: async (userType, username, password) => {
+    try {
+      const { data } = await authAPI.login(username, password, userType);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('userType', data.user.role);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || 'Login failed' };
     }
-    return { success: false, error: 'Invalid username or password' };
   },
 
-  // Logout function
   logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     localStorage.removeItem('userType');
-    localStorage.removeItem('currentStudentId');
   }
 };

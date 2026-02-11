@@ -8,7 +8,8 @@ const StudentDashboard = () => {
   const [student, setStudent] = useState(null);
   const [attendanceStats, setAttendanceStats] = useState({});
   const [results, setResults] = useState([]);
-  
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
   const currentStudentId = auth.getCurrentStudentId();
 
@@ -20,43 +21,48 @@ const StudentDashboard = () => {
   }, [currentStudentId]);
 
   // Load all student data
-  const loadStudentData = () => {
-    const studentInfo = studentData.getStudentById(currentStudentId);
-    setStudent(studentInfo);
-    
-    if (studentInfo) {
-      calculateAttendanceStats();
-      loadResults();
+  const loadStudentData = async () => {
+    try {
+      setLoading(true);
+      const studentInfo = await studentData.getStudentById(currentStudentId);
+      setStudent(studentInfo);
+
+      if (studentInfo) {
+        await calculateAttendanceStats();
+        await loadResults();
+      }
+    } catch (error) {
+      alert('Error loading student data: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   // Calculate attendance statistics
-  const calculateAttendanceStats = () => {
-    const attendance = studentData.getAttendance(currentStudentId);
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    
-    let present = 0, absent = 0, total = 0;
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateKey = `${currentYear}-${currentMonth + 1}-${day}`;
-      if (attendance[dateKey]) {
-        total++;
-        if (attendance[dateKey] === 'present') present++;
-        else absent++;
-      }
+  const calculateAttendanceStats = async () => {
+    try {
+      const attendance = await studentData.getAttendance(currentStudentId);
+      const present = attendance.filter(a => a.status === 'present').length;
+      const absent = attendance.filter(a => a.status === 'absent').length;
+      const total = attendance.length;
+      const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+
+      setAttendanceStats({ present, absent, total, percentage });
+    } catch (error) {
+      console.error('Error calculating attendance:', error);
+      setAttendanceStats({ present: 0, absent: 0, total: 0, percentage: 0 });
     }
-    
-    const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-    
-    setAttendanceStats({ present, absent, total, percentage });
   };
 
   // Load student results
-  const loadResults = () => {
-    const studentResults = studentData.getResults(currentStudentId);
-    setResults(studentResults);
+  const loadResults = async () => {
+    try {
+      const studentResults = await studentData.getResults(currentStudentId);
+      setResults(studentResults || []);
+    } catch (error) {
+      console.error('Error loading results:', error);
+      setResults([]);
+    }
   };
 
   // Handle logout
@@ -68,6 +74,7 @@ const StudentDashboard = () => {
   // Handle section change
   const showSection = (section) => {
     setActiveSection(section);
+    loadStudentData();
   };
 
   // Get grade class for result
@@ -78,41 +85,41 @@ const StudentDashboard = () => {
     return 'poor';
   };
 
-  if (!student) {
-    return <div>Loading...</div>;
+  if (loading || !student) {
+    return <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>;
   }
 
   return (
     <div>
-      <div className="header" style={{background: '#667eea'}}>
+      <div className="header" style={{ background: '#667eea' }}>
         <h1>Student Dashboard</h1>
-        <button 
-          onClick={handleLogout} 
-          style={{padding: '10px 20px', background: 'white', color: '#667eea', border: 'none', borderRadius: '5px', cursor: 'pointer'}}
+        <button
+          onClick={handleLogout}
+          style={{ padding: '10px 20px', background: 'white', color: '#667eea', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
         >
           Logout
         </button>
       </div>
-      
+
       <div className="nav">
-        <button 
-          onClick={() => showSection('profile')} 
+        <button
+          onClick={() => showSection('profile')}
           className={activeSection === 'profile' ? 'active' : ''}
-          style={{background: '#667eea'}}
+          style={{ background: '#667eea' }}
         >
           Profile
         </button>
-        <button 
-          onClick={() => showSection('attendance')} 
+        <button
+          onClick={() => showSection('attendance')}
           className={activeSection === 'attendance' ? 'active' : ''}
-          style={{background: '#667eea'}}
+          style={{ background: '#667eea' }}
         >
           Attendance
         </button>
-        <button 
-          onClick={() => showSection('results')} 
+        <button
+          onClick={() => showSection('results')}
           className={activeSection === 'results' ? 'active' : ''}
-          style={{background: '#667eea'}}
+          style={{ background: '#667eea' }}
         >
           Results
         </button>
@@ -173,12 +180,17 @@ const StudentDashboard = () => {
                   <p><strong>Average Score:</strong> {Math.round(results.reduce((sum, r) => sum + r.marks, 0) / results.length)}/100</p>
                   <p><strong>Total Subjects:</strong> {results.length}</p>
                 </div>
-                
+
                 {results.map((result, index) => (
-                  <div key={index} className="result-item">
+                  <div key={result._id || result.id || index} className="result-item">
                     <div>
                       <h4>{result.subject}</h4>
-                      <small>Date: {result.date}</small>
+                      <small>Date: {new Date(result.createdAt).toLocaleDateString()}</small>
+                      {(result.pdfFilename || result.fileName) && (
+                        <div>
+                          <a href={result.pdfFile || result.fileData} download={result.pdfFilename || result.fileName} style={{ color: '#667eea', textDecoration: 'none' }}>📄 {result.pdfFilename || result.fileName}</a>
+                        </div>
+                      )}
                     </div>
                     <div className={`grade ${getGradeClass(result.marks)}`}>
                       {result.marks}/100

@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
+import FacultyDashboard from './pages/FacultyDashboard';
+import ParentDashboard from './pages/ParentDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import { auth } from './utils/auth';
 
@@ -32,12 +34,37 @@ function App() {
           } 
         />
         
+        {/* Protected Faculty route */}
+        <Route 
+          path="/faculty" 
+          element={
+            <ProtectedRoute requiredRole="faculty">
+              <FacultyDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Protected Parent route */}
+        <Route 
+          path="/parent" 
+          element={
+            <ProtectedRoute requiredRole="parent">
+              <ParentDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
         {/* Default route - redirect based on authentication */}
         <Route 
           path="/" 
           element={
             auth.isAuthenticated() 
-              ? <Navigate to={auth.getUserType() === 'admin' ? '/admin' : '/student'} replace />
+              ? <Navigate to={
+                  auth.getUserType() === 'admin' ? '/admin' :
+                  auth.getUserType() === 'faculty' ? '/faculty' :
+                  auth.getUserType() === 'parent' ? '/parent' :
+                  '/student'
+                } replace />
               : <Navigate to="/login" replace />
           } 
         />
