@@ -32,6 +32,16 @@ export const auth = {
     }
   },
 
+  verifySession: async () => {
+    try {
+      if (!localStorage.getItem('token')) return false;
+      await authAPI.verify();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
+
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

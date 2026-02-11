@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
+const { auth } = require('../middleware/auth');
 
 // Fallback secret for development if environment variable is missing
 const JWT_SECRET = process.env.JWT_SECRET || 'student_portal_secret_key_2025_fallback';
@@ -47,6 +48,15 @@ router.post('/login', async (req, res) => {
     res.json({ token, user: userData });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/verify', auth, async (req, res) => {
+  try {
+    // req.user is populated by the auth middleware
+    res.json({ valid: true, user: req.user });
+  } catch (error) {
+    res.status(401).json({ valid: false, error: 'Session expired or invalid' });
   }
 });
 

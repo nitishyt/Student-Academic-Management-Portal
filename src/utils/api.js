@@ -18,9 +18,29 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Response interceptor to handle session expiration or unauthorized access
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      // Clear local storage and redirect to login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userType');
+
+      // Force redirect to login page if we're not already there
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const authAPI = {
   login: (username, password, role) =>
-    api.post('/auth/login', { username, password, role })
+    api.post('/auth/login', { username, password, role }),
+  verify: () => api.get('/auth/verify')
 };
 
 export const studentAPI = {
