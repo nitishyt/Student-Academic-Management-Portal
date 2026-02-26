@@ -25,16 +25,29 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Verify user is authenticated before loading data
+    const token = sessionStorage.getItem('token');
+    const user = sessionStorage.getItem('user');
+    
+    if (!token || !user) {
+      // User not authenticated, redirect to login
+      navigate('/login');
+      return;
+    }
+
     loadStudents();
     loadFaculties();
-  }, []);
+  }, [navigate]);
 
   const loadStudents = async () => {
     try {
       setLoading(true);
+      console.log('Fetching students...');
       const data = await studentData.getStudents();
+      console.log('Students loaded:', data);
       setStudents(data);
     } catch (error) {
+      console.error('Error loading students:', error);
       alert('Error loading students: ' + error.message);
     } finally {
       setLoading(false);
@@ -44,7 +57,9 @@ const AdminDashboard = () => {
   const loadFaculties = async () => {
     try {
       setLoading(true);
+      console.log('Fetching faculties...');
       const data = await studentData.getFaculties?.() || [];
+      console.log('Faculties loaded:', data);
       setFaculties(data);
     } catch (error) {
       console.error('Error loading faculties:', error);
