@@ -1,9 +1,13 @@
 import axios from 'axios';
 
+// Prefer Vite env var when provided (set VITE_API_URL), otherwise keep existing logic.
+const fallbackBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5000/api'
+  : 'https://student-academic-management-portal-ksqd.onrender.com/api';
+const baseURL = import.meta?.env?.VITE_API_URL || fallbackBase;
+
 const api = axios.create({
-  baseURL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:10000/api'
-    : 'https://student-academic-management-portal-ksqd.onrender.com/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json'
   },

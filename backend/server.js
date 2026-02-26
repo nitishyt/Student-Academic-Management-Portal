@@ -12,25 +12,23 @@ const resultRoutes = require('./routes/results');
 
 const app = express();
 
-// Connect DB
 connectDB();
 
-// ✅ CORS Configuration
+// CORS configuration: allow all localhost ports in dev, specific origins in production
+const corsOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+  : [
+      /^http:\/\/localhost(:\d+)?$/,  // Allow any localhost port in development
+      'https://student-academic-management-portal-1.onrender.com',
+    ];
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'https://student-academic-management-portal-1.onrender.com',
-  ],
+  origin: corsOrigins,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Fallback for pre-flight if needed
-//app.options('*', cors());
-
-// Body parsing
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
