@@ -5,7 +5,7 @@ const Student = require('../models/Student');
 const User = require('../models/User');
 const { auth, authorize } = require('../middleware/auth');
 
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, authorize('admin', 'faculty'), async (req, res) => {
   try {
     const { branch, standard } = req.query;
     const filter = {};
@@ -55,7 +55,7 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-router.post('/', auth, authorize('admin', 'faculty'), async (req, res) => {
+router.post('/', auth, authorize('admin'), async (req, res) => {
   try {
     const { name, rollNo, branch, standard, phone } = req.body;
 
@@ -102,7 +102,7 @@ router.post('/', auth, authorize('admin', 'faculty'), async (req, res) => {
   }
 });
 
-router.delete('/:id', auth, authorize('admin', 'faculty'), async (req, res) => {
+router.delete('/:id', auth, authorize('admin'), async (req, res) => {
   try {
     const student = await Student.findByIdAndDelete(req.params.id);
     if (!student) {
