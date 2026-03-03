@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Attendance = require('../models/Attendance');
+const Student = require('../models/Student');
+const { notifyParent } = require('../services/firebaseNotify');
 const { auth, authorize } = require('../middleware/auth');
 
 router.get('/student/:studentId', auth, async (req, res) => {
@@ -48,6 +50,22 @@ router.post('/', auth, authorize('admin', 'faculty'), async (req, res) => {
     }
 
     res.status(201).json(attendance);
+
+    // Send push notification to parent (non-blocking)
+    try {
+      const student = await Student.findById(studentId).select('name parentFcmToken');
+      if (student?.parentFcmToken) {
+        notifyParent({
+          fcmToken: student.parentFcmToken,
+          studentName: student.name,
+          status,
+          subject: subject || 'N/A',
+          time: time || new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })
+        }).catch(err => console.error('Push notification error:', err.message));
+      }
+    } catch (notifErr) {
+      console.error('Notification lookup error:', notifErr.message);
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

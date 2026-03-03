@@ -129,4 +129,23 @@ router.delete('/:id', auth, authorize('admin'), async (req, res) => {
   }
 });
 
+// Save parent's FCM token for push notifications
+router.post('/:id/fcm-token', auth, async (req, res) => {
+  try {
+    const { fcmToken } = req.body;
+    if (!fcmToken) return res.status(400).json({ error: 'fcmToken is required' });
+
+    const student = await Student.findByIdAndUpdate(
+      req.params.id,
+      { parentFcmToken: fcmToken },
+      { new: true }
+    );
+
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+    res.json({ message: 'FCM token saved' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
