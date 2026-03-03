@@ -49,8 +49,7 @@ export const studentAPI = {
   getAll: (params) => api.get('/students', { params }),
   getById: (id) => api.get(`/students/${id}`),
   create: (data) => api.post('/students', data),
-  delete: (id) => api.delete(`/students/${id}`),
-  saveFcmToken: (studentId, fcmToken) => api.post(`/students/${studentId}/fcm-token`, { fcmToken })
+  delete: (id) => api.delete(`/students/${id}`)
 };
 
 export const facultyAPI = {

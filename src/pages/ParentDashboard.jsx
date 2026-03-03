@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../utils/auth';
 import { studentData } from '../utils/studentData';
-import { requestNotificationPermission, onForegroundMessage } from '../utils/firebase';
 
 const ParentDashboard = () => {
   const [child, setChild] = useState(null);
@@ -10,37 +9,11 @@ const ParentDashboard = () => {
   const [results, setResults] = useState([]);
   const [activeSection, setActiveSection] = useState('profile');
   const [loading, setLoading] = useState(false);
-  const [notifEnabled, setNotifEnabled] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     loadData();
-    // Listen for foreground push notifications
-    const unsubscribe = onForegroundMessage((payload) => {
-      const { title, body } = payload.notification || {};
-      if (title) alert(`${title}\n${body}`);
-      loadData(); // refresh data
-    });
-    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
   }, []);
-
-  // Request push notification permission and save FCM token
-  const enableNotifications = async () => {
-    const studentId = auth.getCurrentUserId();
-    if (!studentId) return;
-    const vapidKey = 'BG_k4TEKcyt2YtVxXLDoJMIvqRrvv2nNGMbAV3wDLAi1pJxOyvL8rDDPGBcW9r1PM_IiH7y-aw_8V3mbcK1FWQw';
-    const token = await requestNotificationPermission(vapidKey);
-    if (token) {
-      try {
-        await studentData.saveFcmToken(studentId, token);
-        setNotifEnabled(true);
-        alert('Notifications enabled! You will receive attendance alerts.');
-      } catch (err) {
-        console.error('Failed to save FCM token:', err);
-        alert('Could not enable notifications. Try again later.');
-      }
-    }
-  };
 
   const loadData = async () => {
     const studentId = auth.getCurrentUserId();
@@ -109,11 +82,6 @@ const ParentDashboard = () => {
         <button onClick={() => { setActiveSection('profile'); loadData(); }} className={activeSection === 'profile' ? 'active' : ''} style={{ background: '#667eea' }}>Child Profile</button>
         <button onClick={() => { setActiveSection('attendance'); loadData(); }} className={activeSection === 'attendance' ? 'active' : ''} style={{ background: '#667eea' }}>Attendance</button>
         <button onClick={() => { setActiveSection('results'); loadData(); }} className={activeSection === 'results' ? 'active' : ''} style={{ background: '#667eea' }}>Results</button>
-        {!notifEnabled && (
-          <button onClick={enableNotifications} style={{ background: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 16px', cursor: 'pointer', marginLeft: 'auto' }}>
-            🔔 Enable Notifications
-          </button>
-        )}
       </div>
 
       <div className="content">

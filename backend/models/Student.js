@@ -11,7 +11,6 @@ const studentSchema = new mongoose.Schema({
   password: { type: String },
   parentUsername: { type: String },
   parentPassword: { type: String },
-  parentFcmToken: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 

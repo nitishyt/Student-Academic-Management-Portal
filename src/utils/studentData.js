@@ -86,10 +86,5 @@ export const studentData = {
 
   deleteFaculty: async (facultyId) => {
     await facultyAPI.delete(facultyId);
-  },
-
-  saveFcmToken: async (studentId, fcmToken) => {
-    const { data } = await studentAPI.saveFcmToken(studentId, fcmToken);
-    return data;
   }
 };
