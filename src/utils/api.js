@@ -1,10 +1,8 @@
 import axios from 'axios';
 
-// Prefer Vite env var when provided (set VITE_API_URL), otherwise keep existing logic.
-const fallbackBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ? 'http://localhost:5000/api'
-  : 'https://student-academic-management-portal-ksqd.onrender.com/api';
-const baseURL = import.meta?.env?.VITE_API_URL || fallbackBase;
+const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const envBaseURL = import.meta?.env?.VITE_API_URL;
+const baseURL = envBaseURL || (isLocalHost ? 'http://localhost:5000/api' : 'https://student-portal-flu2.onrender.com/api');
 
 const api = axios.create({
   baseURL,
@@ -66,7 +64,11 @@ export const attendanceAPI = {
   mark: (data) =>
     api.post('/attendance', data),
   delete: (studentId, attendanceId) =>
-    api.delete(`/attendance/${attendanceId}`)
+    api.delete(`/attendance/${attendanceId}`),
+  // QR generation (faculty/admin)
+  generateQR: (details) => api.post('/attendance/qr', details),
+  // student scan with credentials
+  scan: (data) => api.post('/attendance/scan', data)
 };
 
 export const resultAPI = {

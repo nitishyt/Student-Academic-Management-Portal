@@ -14,16 +14,31 @@ const app = express();
 
 connectDB();
 
-// CORS configuration: allow all localhost ports in dev, specific origins in production
-const corsOrigins = process.env.CORS_ORIGINS 
-  ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
-  : [
-      /^http:\/\/localhost(:\d+)?$/,  // Allow any localhost port in development
-      'https://student-academic-management-portal-1.onrender.com',
-    ];
+// CORS configuration
+const envCorsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
+  : [];
+
+const defaultCorsOrigins = [
+  /^http:\/\/localhost(:\d+)?$/,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+  'https://student-portal-1-3z5l.onrender.com'
+];
+
+const corsOrigins = [...defaultCorsOrigins, ...envCorsOrigins];
 
 app.use(cors({
-  origin: corsOrigins,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    const isAllowed = corsOrigins.some((allowedOrigin) => {
+      if (allowedOrigin instanceof RegExp) return allowedOrigin.test(origin);
+      return allowedOrigin === origin;
+    });
+
+    if (isAllowed) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]

@@ -29,7 +29,28 @@ const FacultyDashboard = () => {
     name: '', rollNo: '', branch: '', standard: '', phone: ''
   });
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [classAttendanceData, setClassAttendanceData] = useState({});
+
+  // QR code data for class generation
+  const [qrCode, setQrCode] = useState('');
+  const generateQRCode = async () => {
+    if (!filterBranch || !filterStandard || !attendanceDate || !attendanceTime || !attendanceSubject) {
+      alert('Please select class and lecture details to generate QR code');
+      return;
+    }
+    try {
+      const resp = await studentData.generateQR({
+        standard: filterStandard,
+        branch: filterBranch,
+        date: attendanceDate,
+        time: attendanceTime,
+        subject: attendanceSubject
+      });
+      setQrCode(resp.code);
+    } catch (err) {
+      alert('QR generation failed: ' + (err.response?.data?.error || err.message));
+    }
+  };  const navigate = useNavigate();
 
   useEffect(() => {
     loadStudents();
@@ -40,6 +61,31 @@ const FacultyDashboard = () => {
       fetchAllStats();
     }
   }, [students, currentMonth, currentYear]);
+
+  const fetchClassAttendance = async () => {
+    if (!filterStandard || !filterBranch || !selectedMonthDate) return;
+    
+    try {
+      const filtered = students.filter(s => s.branch === filterBranch && s.standard === filterStandard);
+      const attendanceMap = {};
+
+      for (const student of filtered) {
+        const studentId = student._id || student.id;
+        const attendance = await studentData.getAttendance(studentId);
+        const dayAttendance = attendance.find(r => r.date === selectedMonthDate && (!facultySubject || r.subject === facultySubject));
+        attendanceMap[studentId] = dayAttendance || null;
+      }
+
+      setClassAttendanceData(attendanceMap);
+    } catch (e) {
+      console.error('Error fetching class attendance:', e);
+      setClassAttendanceData({});
+    }
+  };
+
+  useEffect(() => {
+    fetchClassAttendance();
+  }, [filterStandard, filterBranch, selectedMonthDate, students]);
 
   const fetchAllStats = async () => {
     const cache = {};
@@ -425,6 +471,25 @@ const FacultyDashboard = () => {
                   <input type="text" value={attendanceSubject} onChange={(e) => setAttendanceSubject(e.target.value)} placeholder="Subject/Lecture" style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ddd' }} required disabled={!!facultySubject} />
                 </div>
 
+                <div style={{ marginBottom: '20px' }}>
+                  <button
+                    onClick={generateQRCode}
+                    style={{ padding: '10px 20px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                  >
+                    Generate QR Code for Class
+                  </button>
+                  {qrCode && (
+                    <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`}
+                        alt="QR Code"
+                      />
+                      <p style={{ fontSize: '12px', color: '#555', marginTop: '5px' }}>Valid 30 minutes</p>
+                      <button onClick={() => setQrCode('')} style={{ marginTop: '10px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '5px', padding: '5px 10px', cursor: 'pointer' }}>Clear</button>
+                    </div>
+                  )}
+                </div>
+
                 <h3>Mark Attendance for Class</h3>
                 <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -441,14 +506,30 @@ const FacultyDashboard = () => {
                           <td style={{ padding: '10px' }}>{student.rollNo}</td>
                           <td style={{ padding: '10px' }}>{student.name}</td>
                           <td style={{ padding: '10px', textAlign: 'center' }}>
-                            <select
-                              value={bulkAttendance[student._id || student.id] || 'present'}
-                              onChange={(e) => setBulkAttendance({ ...bulkAttendance, [student._id || student.id]: e.target.value })}
-                              style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #ddd', background: bulkAttendance[student._id || student.id] === 'absent' ? '#ffebee' : '#e8f5e9' }}
-                            >
-                              <option value="present">Present</option>
-                              <option value="absent">Absent</option>
-                            </select>
+                            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', alignItems: 'center' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0 }}>
+                                <input
+                                  type="radio"
+                                  name={`status-${student._id || student.id}`}
+                                  value="present"
+                                  checked={(bulkAttendance[student._id || student.id] || 'present') === 'present'}
+                                  onChange={(e) => setBulkAttendance({ ...bulkAttendance, [student._id || student.id]: e.target.value })}
+                                  style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                                />
+                                <span style={{ color: '#4CAF50', fontWeight: '500' }}>Present</span>
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0 }}>
+                                <input
+                                  type="radio"
+                                  name={`status-${student._id || student.id}`}
+                                  value="absent"
+                                  checked={(bulkAttendance[student._id || student.id] || 'present') === 'absent'}
+                                  onChange={(e) => setBulkAttendance({ ...bulkAttendance, [student._id || student.id]: e.target.value })}
+                                  style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                                />
+                                <span style={{ color: '#f44336', fontWeight: '500' }}>Absent</span>
+                              </label>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -542,11 +623,31 @@ const FacultyDashboard = () => {
                         <input type="text" value={attendanceSubject} onChange={(e) => setAttendanceSubject(e.target.value)} placeholder="Subject" style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ddd', background: !!facultySubject ? '#f7fafc' : '#fff' }} required disabled={!!facultySubject} />
                       </div>
                       <div style={{ gridColumn: 'span 2' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontSize: '0.9em' }}>Status</label>
-                        <select value={attendanceStatus} onChange={(e) => setAttendanceStatus(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ddd', background: attendanceStatus === 'present' ? '#e8f5e9' : '#ffebee' }}>
-                          <option value="present">Present</option>
-                          <option value="absent">Absent</option>
-                        </select>
+                        <label style={{ display: 'block', marginBottom: '10px', color: '#4a5568', fontSize: '0.9em', fontWeight: 'bold' }}>Status</label>
+                        <div style={{ display: 'flex', gap: '30px', padding: '10px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                            <input
+                              type="radio"
+                              name="attendance-status"
+                              value="present"
+                              checked={attendanceStatus === 'present'}
+                              onChange={(e) => setAttendanceStatus(e.target.value)}
+                              style={{ cursor: 'pointer', width: '20px', height: '20px' }}
+                            />
+                            <span style={{ fontSize: '1em', color: '#4CAF50', fontWeight: '600' }}>Present</span>
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                            <input
+                              type="radio"
+                              name="attendance-status"
+                              value="absent"
+                              checked={attendanceStatus === 'absent'}
+                              onChange={(e) => setAttendanceStatus(e.target.value)}
+                              style={{ cursor: 'pointer', width: '20px', height: '20px' }}
+                            />
+                            <span style={{ fontSize: '1em', color: '#f44336', fontWeight: '600' }}>Absent</span>
+                          </label>
+                        </div>
                       </div>
                       <button type="submit" className="btn" style={{ gridColumn: 'span 2', padding: '12px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', marginTop: '10px' }}>Mark Attendance</button>
                     </form>
@@ -559,146 +660,124 @@ const FacultyDashboard = () => {
 
         {activeSection === 'viewAttendance' && (
           <div>
-            <h2>View Attendance Analysis</h2>
+            <h2>View Class Attendance Report</h2>
             <div className="faculty-form">
-              <div style={{ marginBottom: '15px', display: 'flex', gap: '10px' }}>
-                <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ddd' }}>
-                  <option value="">All Branches</option>
-                  <option value="DS">DS</option>
-                  <option value="AIML">AIML</option>
-                  <option value="IT">IT</option>
-                  <option value="COMPS">COMPS</option>
-                </select>
-                <select value={filterStandard} onChange={(e) => setFilterStandard(e.target.value)} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ddd' }}>
-                  <option value="">All Standards</option>
-                  <option value="FE">FE</option>
-                  <option value="SE">SE</option>
-                  <option value="TE">TE</option>
-                  <option value="BE">BE</option>
-                </select>
+              {/* Filters: Standard, Branch, Date */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '25px', background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>Standard</label>
+                  <select 
+                    value={filterStandard} 
+                    onChange={(e) => setFilterStandard(e.target.value)} 
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e0', outline: 'none', fontSize: '14px' }}
+                  >
+                    <option value="">Select Standard</option>
+                    <option value="FE">FE</option>
+                    <option value="SE">SE</option>
+                    <option value="TE">TE</option>
+                    <option value="BE">BE</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>Branch</label>
+                  <select 
+                    value={filterBranch} 
+                    onChange={(e) => setFilterBranch(e.target.value)} 
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e0', outline: 'none', fontSize: '14px' }}
+                  >
+                    <option value="">Select Branch</option>
+                    <option value="DS">DS</option>
+                    <option value="AIML">AIML</option>
+                    <option value="IT">IT</option>
+                    <option value="COMPS">COMPS</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>Date</label>
+                  <input 
+                    type="date" 
+                    value={selectedMonthDate}
+                    onChange={(e) => setSelectedMonthDate(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e0', outline: 'none', fontSize: '14px' }}
+                  />
+                </div>
               </div>
 
-              {!selectedStudent ? (
-                <>
+              {/* Attendance Table */}
+              {filterStandard && filterBranch && selectedMonthDate ? (
+                <div className="info-card">
+                  <h3 style={{ marginBottom: '20px', borderBottom: '2px solid #667eea', paddingBottom: '10px', color: '#2d3748' }}>
+                    📋 {filterStandard} - {filterBranch} | {new Date(selectedMonthDate).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  </h3>
+                  
                   {(() => {
-                    const filtered = students.filter(s => (!filterBranch || s.branch === filterBranch) && (!filterStandard || s.standard === filterStandard));
+                    const filtered = students.filter(s => s.branch === filterBranch && s.standard === filterStandard);
+                    
                     if (filtered.length === 0) return (
-                      <div style={{ padding: '20px', textAlign: 'center', background: '#f9f9f9', borderRadius: '8px', border: '1px dashed #ddd', color: '#666', marginTop: '20px' }}>
-                        <h3>⚠️ No Students Found</h3>
-                        <p>Try changing the filters to see students.</p>
+                      <div style={{ padding: '40px 20px', textAlign: 'center', background: '#f7fafc', borderRadius: '8px', border: '1px dashed #cbd5e0' }}>
+                        <p style={{ fontSize: '16px', color: '#718096' }}>No students found for this standard and branch.</p>
                       </div>
                     );
+
                     return (
-                      <div className="student-selection-grid">
-                        {filtered.map(student => (
-                          <div
-                            key={student._id || student.id}
-                            onClick={() => {
-                              setSelectedStudent(student);
-                              loadAttendanceForStudent(student._id || student.id);
-                            }}
-                            className="student-card-interactive"
-                          >
-                            <h4>{student.name}</h4>
-                            <p>Roll No: {student.rollNo}</p>
-                            <p style={{ fontSize: '0.8em', color: '#a0aec0', marginTop: '5px' }}>{student.branch} - {student.standard}</p>
-                          </div>
-                        ))}
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ background: '#f7fafc', borderBottom: '2px solid #cbd5e0' }}>
+                              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold', color: '#2d3748' }}>Roll No</th>
+                              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold', color: '#2d3748' }}>Student Name</th>
+                              <th style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#2d3748' }}>Status</th>
+                              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold', color: '#2d3748' }}>Time</th>
+                              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold', color: '#2d3748' }}>Subject</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filtered.map((student, idx) => {
+                              const studentId = student._id || student.id;
+                              const attendanceRec = classAttendanceData[studentId];
+
+                              return (
+                                <tr key={studentId} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? 'white' : '#f9fafb', transition: 'background 0.2s' }}>
+                                  <td style={{ padding: '12px', color: '#2d3748' }}>{student.rollNo}</td>
+                                  <td style={{ padding: '12px', color: '#2d3748', fontWeight: '500' }}>{student.name}</td>
+                                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                                    {attendanceRec ? (
+                                      <span style={{ 
+                                        padding: '6px 12px', 
+                                        borderRadius: '20px', 
+                                        background: attendanceRec.status === 'present' ? '#c6f6d5' : '#fed7d7',
+                                        color: attendanceRec.status === 'present' ? '#22543d' : '#742a2a',
+                                        fontWeight: 'bold',
+                                        fontSize: '12px'
+                                      }}>
+                                        {attendanceRec.status.toUpperCase()}
+                                      </span>
+                                    ) : (
+                                      <span style={{ fontSize: '12px', color: '#a0aec0' }}>Not Marked</span>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '12px', color: '#4a5568' }}>
+                                    {attendanceRec?.time || '-'}
+                                  </td>
+                                  <td style={{ padding: '12px', color: '#4a5568' }}>
+                                    {attendanceRec?.subject || '-'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     );
                   })()}
-                </>
+                </div>
               ) : (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <button onClick={() => setSelectedStudent(null)} className="btn-back" style={{ margin: 0 }}>
-                      ← Back to Student List
-                    </button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'white', padding: '10px 20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
-                      <span style={{ fontWeight: '600', color: '#4a5568' }}>Select Month:</span>
-                      <input
-                        type="date"
-                        value={selectedMonthDate}
-                        onChange={(e) => {
-                          const date = new Date(e.target.value);
-                          setSelectedMonthDate(e.target.value);
-                          setCurrentMonth(date.getMonth());
-                          setCurrentYear(date.getFullYear());
-                          if (selectedStudent) loadAttendanceForStudent(selectedStudent._id || selectedStudent.id);
-                        }}
-                        style={{ padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', outline: 'none', cursor: 'pointer' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="info-card">
-                    <h3>Attendance Statistics for {selectedStudent.name} ({new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long', year: 'numeric' })})</h3>
-                    {(() => {
-                      const stats = statsCache[selectedStudent._id || selectedStudent.id] || { total: 0, present: 0, percentage: 0 };
-                      return (
-                        <div className="attendance-summary">
-                          <div className="stat-card">
-                            <h3>{stats.percentage}%</h3>
-                            <p>Attendance Rate</p>
-                          </div>
-                          <div className="stat-card">
-                            <h3>{stats.present}</h3>
-                            <p>Present Days</p>
-                          </div>
-                          <div className="stat-card">
-                            <h3>{stats.total - stats.present}</h3>
-                            <p>Absent Days</p>
-                          </div>
-                          <div className="stat-card">
-                            <h3>{stats.total}</h3>
-                            <p>Total Days</p>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <h3>Monthly Attendance Calendar (Click day for details)</h3>
-                  <div className="info-card">
-                    {attendanceCalendar.length > 0 ? (
-                      <div className="attendance-grid">
-                        {attendanceCalendar.map(day => (
-                          <div key={day.day} className={`day ${day.status}`} style={{ cursor: day.records?.length > 0 ? 'pointer' : 'default' }} onClick={() => day.records?.length > 0 && setSelectedDay(day)}>{day.day}</div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p>No attendance records found.</p>
-                    )}
-                  </div>
-                  {selectedDay && selectedDay.records.length > 0 && (
-                    <div className="info-card" style={{ marginTop: '20px' }}>
-                      <h3>Lecture Details for {selectedDay.dateKey}</h3>
-                      <button onClick={() => setSelectedDay(null)} style={{ marginBottom: '10px', padding: '5px 10px', background: '#667eea', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Close</button>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '2px solid #ddd', background: '#f5f5f5' }}>
-                            <th style={{ padding: '10px', textAlign: 'left' }}>Time</th>
-                            <th style={{ padding: '10px', textAlign: 'left' }}>Subject</th>
-                            <th style={{ padding: '10px', textAlign: 'left' }}>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedDay.records
-                            .filter(record => !facultySubject || record.subject === facultySubject)
-                            .map((record, idx) => (
-                              <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
-                                <td style={{ padding: '10px' }}>{record.time}</td>
-                                <td style={{ padding: '10px' }}>{record.subject}</td>
-                                <td style={{ padding: '10px' }}>
-                                  <span style={{ padding: '5px 10px', borderRadius: '5px', background: record.status === 'present' ? '#4CAF50' : '#f44336', color: 'white', fontSize: '12px' }}>
-                                    {record.status.toUpperCase()}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                <div style={{ padding: '60px 20px', textAlign: 'center', background: 'white', borderRadius: '12px', border: '2px dashed #cbd5e0' }}>
+                  <p style={{ fontSize: '18px', color: '#718096', fontWeight: '500' }}>
+                    👆 Select Standard, Branch, and Date to view attendance
+                  </p>
                 </div>
               )}
             </div>

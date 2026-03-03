@@ -10,6 +10,11 @@ const StudentDashboard = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // QR scan states
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanResult, setScanResult] = useState('');
+  const [loginCred, setLoginCred] = useState({ username: '', password: '' });
+
   const navigate = useNavigate();
   const currentStudentId = auth.getCurrentStudentId();
 
@@ -77,6 +82,38 @@ const StudentDashboard = () => {
     loadStudentData();
   };
 
+  // QR scanner setup and cleanup
+  useEffect(() => {
+    if (showScanner) {
+      const { Html5QrcodeScanner } = require('html5-qrcode');
+      const scanner = new Html5QrcodeScanner('qr-reader', { fps: 10, qrbox: 250 }, false);
+      scanner.render(
+        (decodedText) => {
+          setScanResult(decodedText);
+          setShowScanner(false);
+          scanner.clear().catch(() => {});
+        },
+        (error) => {
+          console.warn('QR scan error', error);
+        }
+      );
+      return () => scanner.clear().catch(() => {});
+    }
+  }, [showScanner]);
+
+  const submitScan = async () => {
+    if (!scanResult) return alert('No QR code entered');
+    if (!loginCred.username || !loginCred.password) return alert('Enter username/password');
+    try {
+      const resp = await studentData.scanQRCode({ code: scanResult, username: loginCred.username, password: loginCred.password });
+      alert(resp.message || 'Attendance marked');
+      setScanResult('');
+      setLoginCred({ username: '', password: '' });
+      await calculateAttendanceStats();
+    } catch (err) {
+      alert('Scan failed: ' + (err.response?.data?.error || err.message));
+    }
+  };
   // Get grade class for result
   const getGradeClass = (marks) => {
     if (marks >= 90) return 'excellent';
@@ -161,6 +198,59 @@ const StudentDashboard = () => {
                 <h3>{attendanceStats.total}</h3>
                 <p>Total Days</p>
               </div>
+            </div>
+
+            {/* QR Section */}
+            <div style={{ marginTop: '30px', textAlign: 'center' }}>
+              <h3>Mark Attendance via QR Code</h3>
+              {!scanResult && (
+                <>
+                  <button
+                    onClick={() => setShowScanner(true)}
+                    style={{ padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                  >
+                    Scan with Camera
+                  </button>
+                  <div style={{ marginTop: '10px' }}>
+                    <p style={{ fontSize: '0.85em', color: '#555' }}>Or paste the code below:</p>
+                    <input
+                      type="text"
+                      value={scanResult}
+                      onChange={(e) => setScanResult(e.target.value)}
+                      placeholder="Paste QR token here"
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                    />
+                  </div>
+                </>
+              )}
+              {showScanner && (
+                <div id="qr-reader" style={{ width: '300px', margin: '20px auto' }}></div>
+              )}
+              {scanResult && (
+                <div style={{ marginTop: '20px', maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto' }}>
+                  <p><strong>Scanned token:</strong> {scanResult}</p>
+                  <input
+                    type="text"
+                    placeholder="Username"
+                    value={loginCred.username}
+                    onChange={(e) => setLoginCred({ ...loginCred, username: e.target.value })}
+                    style={{ width: '100%', padding: '8px', margin: '5px 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={loginCred.password}
+                    onChange={(e) => setLoginCred({ ...loginCred, password: e.target.value })}
+                    style={{ width: '100%', padding: '8px', margin: '5px 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                  />
+                  <button
+                    onClick={submitScan}
+                    style={{ padding: '10px 20px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginTop: '10px' }}
+                  >
+                    Submit Attendance
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
