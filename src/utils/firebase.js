@@ -20,21 +20,49 @@ try {
 }
 
 /**
- * Register the Firebase messaging service worker explicitly.
+ * Wait for a service worker to reach the activated state.
  */
-async function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) return null;
+function waitForSWActivation(registration) {
+  return new Promise((resolve) => {
+    const sw = registration.installing || registration.waiting || registration.active;
+    if (sw?.state === 'activated') {
+      resolve(registration);
+      return;
+    }
+    if (sw) {
+      sw.addEventListener('statechange', () => {
+        if (sw.state === 'activated') resolve(registration);
+      });
+    } else {
+      resolve(registration);
+    }
+  });
+}
+
+/**
+ * Register the Firebase messaging service worker and wait for activation.
+ */
+async function getReadySW() {
+  if (!('serviceWorker' in navigator)) return undefined;
   try {
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: '/'
-    });
-    console.log('SW registered:', registration.scope);
-    // Wait for the service worker to be ready
-    await navigator.serviceWorker.ready;
-    return registration;
+    // Unregister any existing SW first to avoid stale state
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const reg of registrations) {
+      if (reg.active?.scriptURL?.includes('firebase-messaging-sw')) {
+        console.log('Found existing firebase SW, reusing...');
+        await waitForSWActivation(reg);
+        return reg;
+      }
+    }
+    // Register fresh
+    const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+    console.log('SW registered, waiting for activation...');
+    await waitForSWActivation(reg);
+    console.log('SW activated');
+    return reg;
   } catch (err) {
-    console.error('SW registration failed:', err);
-    return null;
+    console.error('SW setup failed:', err);
+    return undefined;
   }
 }
 
@@ -44,7 +72,10 @@ async function registerServiceWorker() {
  * @returns {Promise<string|null>}
  */
 export async function requestNotificationPermission(vapidKey) {
-  if (!messaging) return null;
+  if (!messaging) {
+    console.error('Firebase Messaging not available');
+    return null;
+  }
 
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
@@ -52,18 +83,37 @@ export async function requestNotificationPermission(vapidKey) {
     return null;
   }
 
-  try {
-    const swRegistration = await registerServiceWorker();
-    const token = await getToken(messaging, {
-      vapidKey,
-      serviceWorkerRegistration: swRegistration || undefined
-    });
-    console.log('FCM Token:', token);
-    return token;
-  } catch (err) {
-    console.error('Error getting FCM token:', err);
-    return null;
+  // Try up to 3 times with increasing delay
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`FCM token attempt ${attempt}...`);
+      const swReg = await getReadySW();
+      const token = await getToken(messaging, {
+        vapidKey,
+        serviceWorkerRegistration: swReg
+      });
+      console.log('FCM Token:', token);
+      return token;
+    } catch (err) {
+      console.error(`Attempt ${attempt} failed:`, err.name, err.message);
+      if (attempt < 3) {
+        // Wait before retry, unsubscribing any stale push subscription
+        try {
+          const swReg = await navigator.serviceWorker.ready;
+          const sub = await swReg.pushManager.getSubscription();
+          if (sub) {
+            console.log('Removing stale push subscription...');
+            await sub.unsubscribe();
+          }
+        } catch (e) { /* ignore */ }
+        await new Promise(r => setTimeout(r, 1500 * attempt));
+      } else {
+        console.error('All FCM token attempts failed');
+        return null;
+      }
+    }
   }
+  return null;
 }
 
 /**

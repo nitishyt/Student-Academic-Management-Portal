@@ -28,7 +28,7 @@ const ParentDashboard = () => {
   const enableNotifications = async () => {
     const studentId = auth.getCurrentUserId();
     if (!studentId) return;
-    const vapidKey = 'BJWyDwHR5NUZUr2d0Bmu4IbDW7vHM-aJtGHAnnE9mXn854syLFMAuijPe3689zBl_OE6DW5iKFOhwtGAy-F87zE';
+    const vapidKey = 'BG_k4TEKcyt2YtVxXLDoJMIvqRrvv2nNGMbAV3wDLAi1pJxOyvL8rDDPGBcW9r1PM_IiH7y-aw_8V3mbcK1FWQw';
     const token = await requestNotificationPermission(vapidKey);
     if (token) {
       try {
