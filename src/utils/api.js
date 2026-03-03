@@ -64,11 +64,7 @@ export const attendanceAPI = {
   mark: (data) =>
     api.post('/attendance', data),
   delete: (studentId, attendanceId) =>
-    api.delete(`/attendance/${attendanceId}`),
-  // QR generation (faculty/admin)
-  generateQR: (details) => api.post('/attendance/qr', details),
-  // student scan with credentials
-  scan: (data) => api.post('/attendance/scan', data)
+    api.delete(`/attendance/${attendanceId}`)
 };
 
 export const resultAPI = {

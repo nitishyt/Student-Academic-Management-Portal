@@ -31,26 +31,7 @@ const FacultyDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [classAttendanceData, setClassAttendanceData] = useState({});
 
-  // QR code data for class generation
-  const [qrCode, setQrCode] = useState('');
-  const generateQRCode = async () => {
-    if (!filterBranch || !filterStandard || !attendanceDate || !attendanceTime || !attendanceSubject) {
-      alert('Please select class and lecture details to generate QR code');
-      return;
-    }
-    try {
-      const resp = await studentData.generateQR({
-        standard: filterStandard,
-        branch: filterBranch,
-        date: attendanceDate,
-        time: attendanceTime,
-        subject: attendanceSubject
-      });
-      setQrCode(resp.code);
-    } catch (err) {
-      alert('QR generation failed: ' + (err.response?.data?.error || err.message));
-    }
-  };  const navigate = useNavigate();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadStudents();
@@ -469,25 +450,6 @@ const FacultyDashboard = () => {
                   <input type="date" value={attendanceDate} onChange={(e) => setAttendanceDate(e.target.value)} style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ddd' }} required />
                   <input type="time" value={attendanceTime} onChange={(e) => setAttendanceTime(e.target.value)} placeholder="Lecture Time" style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ddd' }} required />
                   <input type="text" value={attendanceSubject} onChange={(e) => setAttendanceSubject(e.target.value)} placeholder="Subject/Lecture" style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ddd' }} required disabled={!!facultySubject} />
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <button
-                    onClick={generateQRCode}
-                    style={{ padding: '10px 20px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-                  >
-                    Generate QR Code for Class
-                  </button>
-                  {qrCode && (
-                    <div style={{ marginTop: '15px', textAlign: 'center' }}>
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`}
-                        alt="QR Code"
-                      />
-                      <p style={{ fontSize: '12px', color: '#555', marginTop: '5px' }}>Valid 30 minutes</p>
-                      <button onClick={() => setQrCode('')} style={{ marginTop: '10px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '5px', padding: '5px 10px', cursor: 'pointer' }}>Clear</button>
-                    </div>
-                  )}
                 </div>
 
                 <h3>Mark Attendance for Class</h3>

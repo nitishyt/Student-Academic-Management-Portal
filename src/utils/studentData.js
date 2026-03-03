@@ -42,16 +42,6 @@ export const studentData = {
     }
   },
 
-  generateQR: async (details) => {
-    const { data } = await attendanceAPI.generateQR(details);
-    return data;
-  },
-
-  scanQRCode: async (payload) => {
-    const { data } = await attendanceAPI.scan(payload);
-    return data;
-  },
-
   setAttendance: async (studentId, date, status, time, subject) => {
     await attendanceAPI.mark({ studentId, date, status, time, subject });
   },
