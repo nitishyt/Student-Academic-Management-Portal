@@ -20,6 +20,25 @@ try {
 }
 
 /**
+ * Register the Firebase messaging service worker explicitly.
+ */
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return null;
+  try {
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/'
+    });
+    console.log('SW registered:', registration.scope);
+    // Wait for the service worker to be ready
+    await navigator.serviceWorker.ready;
+    return registration;
+  } catch (err) {
+    console.error('SW registration failed:', err);
+    return null;
+  }
+}
+
+/**
  * Request notification permission and return the FCM token.
  * @param {string} vapidKey - Your VAPID public key from Firebase Console.
  * @returns {Promise<string|null>}
@@ -34,7 +53,11 @@ export async function requestNotificationPermission(vapidKey) {
   }
 
   try {
-    const token = await getToken(messaging, { vapidKey });
+    const swRegistration = await registerServiceWorker();
+    const token = await getToken(messaging, {
+      vapidKey,
+      serviceWorkerRegistration: swRegistration || undefined
+    });
     console.log('FCM Token:', token);
     return token;
   } catch (err) {

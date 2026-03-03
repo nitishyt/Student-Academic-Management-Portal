@@ -1,9 +1,7 @@
 /* eslint-disable no-undef */
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/11.0.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/11.0.0/firebase-messaging-compat.js');
 
-// These values are safe to expose (they are public identifiers, not secrets).
-// Replace with your own Firebase project config.
 firebase.initializeApp({
   apiKey: 'AIzaSyDac_0UmrM1UTpmUzuLb1-o7YkPqXRhW-k',
   authDomain: 'student-portal-313cc.firebaseapp.com',
@@ -16,6 +14,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
+  console.log('[SW] Background message received:', payload);
   const { title, body } = payload.notification || {};
   self.registration.showNotification(title || 'Attendance Update', {
     body: body || '',
