@@ -28,7 +28,7 @@ const ParentDashboard = () => {
   const enableNotifications = async () => {
     const studentId = auth.getCurrentUserId();
     if (!studentId) return;
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
+    const vapidKey = 'BJWyDwHR5NUZUr2d0Bmu4IbDW7vHM-aJtGHAnnE9mXn854syLFMAuijPe3689zBl_OE6DW5iKFOhwtGAy-F87zE';
     const token = await requestNotificationPermission(vapidKey);
     if (token) {
       try {

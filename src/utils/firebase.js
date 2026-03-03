@@ -1,14 +1,13 @@
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
-// Replace with your own Firebase project config.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'REPLACE_WITH_YOUR_API_KEY',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'REPLACE_WITH_YOUR_AUTH_DOMAIN',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'REPLACE_WITH_YOUR_PROJECT_ID',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'REPLACE_WITH_YOUR_STORAGE_BUCKET',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_SENDER_ID || 'REPLACE_WITH_YOUR_SENDER_ID',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || 'REPLACE_WITH_YOUR_APP_ID'
+  apiKey: 'AIzaSyDac_0UmrM1UTpmUzuLb1-o7YkPqXRhW-k',
+  authDomain: 'student-portal-313cc.firebaseapp.com',
+  projectId: 'student-portal-313cc',
+  storageBucket: 'student-portal-313cc.firebasestorage.app',
+  messagingSenderId: '129786227482',
+  appId: '1:129786227482:web:62b3fdff9fbf2cc55f5aa3'
 };
 
 const app = initializeApp(firebaseConfig);

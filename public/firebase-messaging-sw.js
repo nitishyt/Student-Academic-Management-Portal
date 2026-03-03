@@ -5,12 +5,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-comp
 // These values are safe to expose (they are public identifiers, not secrets).
 // Replace with your own Firebase project config.
 firebase.initializeApp({
-  apiKey: 'REPLACE_WITH_YOUR_API_KEY',
-  authDomain: 'REPLACE_WITH_YOUR_AUTH_DOMAIN',
-  projectId: 'REPLACE_WITH_YOUR_PROJECT_ID',
-  storageBucket: 'REPLACE_WITH_YOUR_STORAGE_BUCKET',
-  messagingSenderId: 'REPLACE_WITH_YOUR_SENDER_ID',
-  appId: 'REPLACE_WITH_YOUR_APP_ID'
+  apiKey: 'AIzaSyDac_0UmrM1UTpmUzuLb1-o7YkPqXRhW-k',
+  authDomain: 'student-portal-313cc.firebaseapp.com',
+  projectId: 'student-portal-313cc',
+  storageBucket: 'student-portal-313cc.firebasestorage.app',
+  messagingSenderId: '129786227482',
+  appId: '1:129786227482:web:62b3fdff9fbf2cc55f5aa3'
 });
 
 const messaging = firebase.messaging();
