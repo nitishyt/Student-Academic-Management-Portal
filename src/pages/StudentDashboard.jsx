@@ -84,21 +84,40 @@ const StudentDashboard = () => {
 
   // QR scanner setup and cleanup
   useEffect(() => {
+    let scannerInstance = null;
+    let cancelled = false;
+
     if (showScanner) {
-      const { Html5QrcodeScanner } = require('html5-qrcode');
-      const scanner = new Html5QrcodeScanner('qr-reader', { fps: 10, qrbox: 250 }, false);
-      scanner.render(
-        (decodedText) => {
-          setScanResult(decodedText);
+      import('html5-qrcode')
+        .then(({ Html5QrcodeScanner }) => {
+          if (cancelled) return;
+          scannerInstance = new Html5QrcodeScanner(
+            'qr-reader',
+            { fps: 10, qrbox: 250 },
+            false
+          );
+          scannerInstance.render(
+            (decodedText) => {
+              setScanResult(decodedText);
+              setShowScanner(false);
+              scannerInstance.clear().catch(() => {});
+            },
+            (error) => {
+              console.warn('QR scan error', error);
+            }
+          );
+        })
+        .catch((err) => {
+          console.error('Failed to load QR scanner library:', err);
+          alert('Could not load camera scanner. You can paste the QR code manually.');
           setShowScanner(false);
-          scanner.clear().catch(() => {});
-        },
-        (error) => {
-          console.warn('QR scan error', error);
-        }
-      );
-      return () => scanner.clear().catch(() => {});
+        });
     }
+
+    return () => {
+      cancelled = true;
+      if (scannerInstance) scannerInstance.clear().catch(() => {});
+    };
   }, [showScanner]);
 
   const submitScan = async () => {
