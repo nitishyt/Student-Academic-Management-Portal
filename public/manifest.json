@@ -1,0 +1,7 @@
+{
+  "name": "Student Portal",
+  "short_name": "StudentPortal",
+  "start_url": "/",
+  "display": "standalone",
+  "gcm_sender_id": "103953800507"
+}
